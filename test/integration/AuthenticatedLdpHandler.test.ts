@@ -10,6 +10,7 @@ import { Operation } from '../../src/ldp/operations/Operation';
 import { Parser } from 'n3';
 import { PatchingStore } from '../../src/storage/PatchingStore';
 import { Representation } from '../../src/ldp/representation/Representation';
+import { RepresentationConvertingStore } from '../../src/storage/RepresentationConvertingStore';
 import { ResponseDescription } from '../../src/ldp/operations/ResponseDescription';
 import { SimpleAuthorizer } from '../../src/authorization/SimpleAuthorizer';
 import { SimpleBodyParser } from '../../src/ldp/http/SimpleBodyParser';
@@ -25,6 +26,7 @@ import { SimpleResponseWriter } from '../../src/ldp/http/SimpleResponseWriter';
 import { SimpleSparqlUpdateBodyParser } from '../../src/ldp/http/SimpleSparqlUpdateBodyParser';
 import { SimpleSparqlUpdatePatchHandler } from '../../src/storage/patch/SimpleSparqlUpdatePatchHandler';
 import { SimpleTargetExtractor } from '../../src/ldp/http/SimpleTargetExtractor';
+import { SimpleTurtleQuadConverter } from '../../src/storage/conversion/SimpleTurtleQuadConverter';
 import { SingleThreadedResourceLocker } from '../../src/storage/SingleThreadedResourceLocker';
 import streamifyArray from 'streamify-array';
 import { createResponse, MockResponse } from 'node-mocks-http';
@@ -134,9 +136,11 @@ describe('An AuthenticatedLdpHandler', (): void => {
     const authorizer = new SimpleAuthorizer();
 
     const store = new SimpleResourceStore('http://test.com/');
+    const converter = new SimpleTurtleQuadConverter();
+    const convertingStore = new RepresentationConvertingStore(store, converter);
     const locker = new SingleThreadedResourceLocker();
-    const patcher = new SimpleSparqlUpdatePatchHandler(store, locker);
-    const patchingStore = new PatchingStore(store, patcher);
+    const patcher = new SimpleSparqlUpdatePatchHandler(convertingStore, locker);
+    const patchingStore = new PatchingStore(convertingStore, patcher);
 
     const operationHandler = new CompositeAsyncHandler<Operation, ResponseDescription>([
       new SimpleGetOperationHandler(patchingStore),
